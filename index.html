@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fahrgeschäfte-Akten</title>
+<script src="config.js"></script>
+<style>
+:root{--bg:#f3f5ff;--card:rgba(255,255,255,.72);--tx:#14182b;--mu:#6a7192;--bd:rgba(110,120,180,.22);--pr:#6c5ce7;--pr2:#00b4c8;--wi:rgba(255,176,32,.16);--wib:#ffb020;--wit:#7a4a00;--sh:0 10px 30px rgba(60,70,140,.15)}
+@media (prefers-color-scheme:dark){:root{--bg:#090c1a;--card:rgba(24,29,58,.62);--tx:#eef0ff;--mu:#9aa2cc;--bd:rgba(140,150,230,.18);--pr:#8b7bff;--pr2:#22d3ee;--wi:rgba(255,176,32,.14);--wit:#ffd68a;--sh:0 10px 40px rgba(0,0,0,.45)}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+.bg{position:fixed;inset:0;overflow:hidden;z-index:-1}
+.bg i{position:absolute;width:46vmax;height:46vmax;border-radius:50%;filter:blur(80px);opacity:.42;animation:fl 18s ease-in-out infinite alternate}
+.bg i:nth-child(1){background:var(--pr);top:-15vmax;left:-10vmax}
+.bg i:nth-child(2){background:var(--pr2);right:-15vmax;top:20vh;animation-duration:24s}
+.bg i:nth-child(3){background:#ff5fa2;bottom:-22vmax;left:25vw;animation-duration:30s;opacity:.28}
+@keyframes fl{to{transform:translate(8vmax,6vmax) scale(1.15)}}
+@keyframes up{from{opacity:0;transform:translateY(16px)}}
+@keyframes swap{from{opacity:0;transform:translateX(26px) scale(.98)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes bob{50%{transform:translateY(-4px) rotate(-6deg)}}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,176,32,.6)}100%{box-shadow:0 0 0 9px rgba(255,176,32,0)}}
+@keyframes sh{to{background-position:-200% 0}}
+@keyframes rip{to{transform:translate(-50%,-50%) scale(30);opacity:0}}
+@keyframes sweep{to{transform:translateX(120%)}}
+header{position:sticky;top:0;z-index:20;padding:12px 18px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:var(--card);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-bottom:1px solid var(--bd)}
+header h1{margin:0;font-size:1.25rem;flex:1;letter-spacing:-.01em}
+.wheel{display:inline-block;animation:spin 14s linear infinite}
+.gr{background:linear-gradient(90deg,var(--pr),var(--pr2));-webkit-background-clip:text;background-clip:text;color:transparent}
+#status{font-size:.8rem;padding:4px 12px;border-radius:99px;border:1px solid var(--bd);color:var(--mu)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:1200px;margin:18px auto 0;padding:0 16px}
+.stat,.panel{background:var(--card);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid var(--bd);border-radius:20px;box-shadow:var(--sh)}
+.stat{padding:12px 16px;display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center;animation:up .6s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i)*90ms);transition:transform .25s}
+.stat:hover{transform:translateY(-3px)}
+.stat span{grid-row:span 2;font-size:1.7rem}
+.stat b{font-size:1.7rem;line-height:1.1;background:linear-gradient(90deg,var(--pr),var(--pr2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.stat small{color:var(--mu);font-size:.78rem}
+@media(max-width:560px){.stat{grid-template-columns:1fr;text-align:center}.stat span{grid-row:auto}}
+.app{display:grid;grid-template-columns:340px 1fr;gap:16px;max-width:1200px;margin:0 auto;padding:16px}
+@media(max-width:800px){.app{grid-template-columns:1fr}.app.detail .list{display:none}.app:not(.detail) .akte{display:none}}
+.app>.panel{animation:up .6s cubic-bezier(.2,.8,.2,1) both}
+.app>.akte{animation-delay:.12s}
+.list{padding:14px;align-self:start}
+input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:12px;background:rgba(128,138,220,.08);color:var(--tx);font:inherit;transition:border-color .2s,box-shadow .2s}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--pr);box-shadow:0 0 0 4px rgba(139,123,255,.22)}
+textarea{resize:vertical}
+.btn{position:relative;overflow:hidden;background:linear-gradient(135deg,var(--pr),var(--pr2));color:#fff;border:0;border-radius:12px;padding:10px 18px;font:inherit;font-weight:600;cursor:pointer;box-shadow:0 6px 18px rgba(108,92,231,.35);transition:transform .15s,filter .2s,box-shadow .2s}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.1)}
+.btn:active{transform:scale(.95)}
+.btn.sec,.btn.hd{background:var(--card);color:var(--tx);border:1px solid var(--bd);box-shadow:none;font-weight:500}
+.btn.hd{padding:7px 14px}
+.btn.del{background:none;color:#ef4444;border:1px solid #ef4444;box-shadow:none}
+.btn:disabled{opacity:.5;pointer-events:none}
+.btn.rp::after{content:"";position:absolute;left:var(--x);top:var(--y);width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.55);transform:translate(-50%,-50%) scale(0);animation:rip .6s ease-out}
+.row{display:flex;gap:8px;margin-bottom:10px}
+.item{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;padding:10px 12px;border-radius:16px;cursor:pointer;border:1px solid transparent;transition:transform .2s,background .2s,border-color .2s,box-shadow .2s;animation:up .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i,0)*45ms)}
+.item>div{min-width:0}
+.item:hover{transform:translateX(5px);background:rgba(128,138,220,.12)}
+.item.on{background:linear-gradient(90deg,rgba(139,123,255,.24),rgba(34,211,238,.1));border-color:var(--pr);box-shadow:0 4px 18px rgba(108,92,231,.25)}
+.item .ic{width:44px;height:44px;display:grid;place-items:center;font-size:1.45rem;border-radius:14px;background:rgba(128,138,220,.16);transition:transform .3s}
+.item:hover .ic{transform:rotate(-10deg) scale(1.15)}
+.item b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.item small{color:var(--mu)}
+.nr{font-size:.72rem;color:var(--pr);font-weight:700;letter-spacing:.04em}
+.warn{font-style:normal;font-size:.66rem;padding:1px 8px;border-radius:99px;background:var(--wib);color:#2b1a00;margin-left:6px;animation:pulse 1.8s infinite}
+.akte{padding:24px}
+.akte.in{animation:swap .45s cubic-bezier(.2,.8,.2,1)}
+.akte h2{margin:0;display:flex;align-items:center;gap:10px;font-size:1.6rem;letter-spacing:-.01em}
+.akte h2 .ic{display:inline-block;animation:bob 3.2s ease-in-out infinite}
+.kopf{display:flex;gap:10px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px}
+.wichtig{position:relative;overflow:hidden;background:var(--wi);border-left:5px solid var(--wib);color:var(--wit);padding:14px 16px;border-radius:14px;margin:14px 0;white-space:pre-wrap}
+.wichtig::after{content:"";position:absolute;inset:0;transform:translateX(-120%);background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),transparent);animation:sweep 1.4s .5s ease-out 1 forwards}
+.wichtig b{display:block;font-size:.75rem;text-transform:uppercase;letter-spacing:.08em}
+dl{display:grid;grid-template-columns:150px 1fr;gap:8px 14px;margin:16px 0}
+dt{color:var(--mu);font-size:.88rem}dd{margin:0;white-space:pre-wrap}
+h3{font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin:22px 0 6px}
+.verlauf div{font-size:.86rem;color:var(--mu);padding:5px 0 5px 14px;border-left:2px solid var(--pr);margin-left:4px;position:relative}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+label.l{display:block;font-size:.78rem;color:var(--mu);margin-bottom:3px}
+.empty{color:var(--mu);text-align:center;padding:60px 16px}
+.back{display:none;margin-bottom:10px}
+@media(max-width:800px){.back{display:inline-block}}
+.err{color:#ef4444;font-size:.9rem;margin:8px 0}
+#login{display:none;max-width:460px;margin:40px auto;padding:22px;animation:up .5s both}
+#login ol{padding-left:20px;font-size:.9rem;color:var(--mu)}
+.sk{height:62px;border-radius:16px;margin-bottom:8px;background:linear-gradient(90deg,rgba(128,138,220,.1),rgba(128,138,220,.26),rgba(128,138,220,.1));background-size:200% 100%;animation:sh 1.2s infinite}
+#toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,30px);opacity:0;pointer-events:none;background:var(--tx);color:var(--bg);padding:11px 22px;border-radius:99px;font-size:.92rem;box-shadow:var(--sh);transition:.4s cubic-bezier(.2,.8,.2,1);z-index:50}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+@media(prefers-reduced-motion:reduce){*,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="bg"><i></i><i></i><i></i></div>
+<header>
+ <h1><span class="wheel">🎡</span> <span class="gr">Fahrgeschäfte-Akten</span></h1>
+ <span id="status">Nur lesen</span>
+ <button class="btn hd" id="refresh" title="Neu laden">↻</button>
+ <button class="btn hd" id="loginopen">Anmelden zum Eintragen</button>
+</header>
+
+<div id="login" class="panel">
+ <h2 style="margin-top:0">Anmelden</h2>
+ <p class="mu" style="color:var(--mu);font-size:.9rem">Zum Eintragen brauchst du einen GitHub-Zugang mit Schreibrechten auf dieses Repository. Lesen kann jeder ohne Anmeldung.</p>
+ <ol><li>Auf GitHub: Settings → Developer settings → Personal access tokens → <b>Tokens (classic)</b> → neues Token</li><li>Haken bei <b>public_repo</b> setzen, Ablaufdatum wählen</li><li>Token hier einfügen</li></ol>
+ <input id="tok" type="password" placeholder="ghp_…" autocomplete="off">
+ <div class="err" id="loginerr"></div>
+ <div class="row" style="margin-top:10px"><button class="btn" id="loginbtn">Anmelden</button><button class="btn sec" id="logincancel">Abbrechen</button></div>
+ <p style="font-size:.78rem;color:var(--mu)">Das Token wird nur in diesem Browser gespeichert. Auf fremden Geräten danach „Abmelden“ klicken.</p>
+</div>
+
+<div class="stats" id="stats"></div>
+<div class="app" id="app">
+ <div class="panel list">
+  <div class="row"><input id="q" type="search" placeholder="Akte suchen …"><button class="btn" id="neu" style="display:none">+ Neu</button></div>
+  <select id="ft" style="margin-bottom:10px"></select>
+  <div id="liste"><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>
+ </div>
+ <div class="panel akte" id="akte"></div>
+</div>
+
+<div id="toast"></div>
+<script>
+var TYPEN=["Achterbahn","Kettenkarussell","Riesenrad","Autoscooter","Freifallturm","Wasserbahn","Kinderfahrgeschäft","Rundfahrgeschäft","Laufgeschäft","Sonstiges"];
+var CFG=Object.assign({owner:"",repo:"",branch:"main",datei:"data/eintraege.json"},window.FG_CONFIG||{});
+if(!CFG.owner&&/\.github\.io$/.test(location.hostname)){CFG.owner=location.hostname.split(".")[0];CFG.repo=location.pathname.split("/")[1]||location.hostname}
+var daten=[],sel=null,token="",login="",darf=false;
+function $(i){return document.getElementById(i)}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function ls(k,v){try{if(v===undefined)return localStorage.getItem(k)||"";if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){return ""}}
+function datum(s){return new Date(s).toLocaleString("de-DE",{dateStyle:"medium",timeStyle:"short"})}
+function nr(id){return "FG-"+String(id).padStart(4,"0")}
+
+/* ---------- GitHub-Zugriff ---------- */
+function gh(method,path,body){
+ var h={"Accept":"application/vnd.github+json"};
+ if(token)h.Authorization="Bearer "+token;
+ if(body)h["Content-Type"]="application/json";
+ return fetch("https://api.github.com"+path,{method:method,headers:h,body:body?JSON.stringify(body):undefined}).then(function(r){
+  return r.json().catch(function(){return {}}).then(function(j){if(!r.ok){var e=new Error(j.message||("HTTP "+r.status));e.status=r.status;throw e}return j})});
+}
+function pfad(){return "/repos/"+CFG.owner+"/"+CFG.repo+"/contents/"+CFG.datei}
+function dec(b){var s=atob(b.replace(/\s/g,"")),u=new Uint8Array(s.length);for(var i=0;i<s.length;i++)u[i]=s.charCodeAt(i);return new TextDecoder().decode(u)}
+function enc(t){var u=new TextEncoder().encode(t),s="";for(var i=0;i<u.length;i++)s+=String.fromCharCode(u[i]);return btoa(s)}
+function holen(){
+ return gh("GET",pfad()+"?ref="+encodeURIComponent(CFG.branch)+"&_="+Date.now()).then(function(j){return {liste:JSON.parse(dec(j.content)||"[]"),sha:j.sha}}).catch(function(e){if(e.status===404)return {liste:[],sha:undefined};throw e});
+}
+function speichern(mutate,msg,n){
+ n=n||0;
+ return holen().then(function(s){
+  var res=mutate(s.liste);
+  return gh("PUT",pfad(),{message:msg,content:enc(JSON.stringify(s.liste,null,2)+"\n"),sha:s.sha,branch:CFG.branch}).then(function(){return res});
+ }).catch(function(e){if((e.status===409||e.status===422)&&n<3)return speichern(mutate,msg,n+1);throw e});
+}
+function laden(){
+ var p=token?holen().then(function(s){return s.liste}):fetch(CFG.datei+"?t="+Date.now()).then(function(r){if(!r.ok)throw new Error("Daten nicht lesbar");return r.json()});
+ return p.then(function(l){daten=l;zeichne();stats()}).catch(function(e){$("liste").innerHTML='<div class="err">Laden fehlgeschlagen: '+esc(e.message)+'</div>'});
+}
+
+/* ---------- Anmeldung ---------- */
+function status(){
+ $("status").textContent=darf?"✏️ @"+login+" (darf eintragen)":(login?"@"+login+" – keine Schreibrechte":"Nur lesen");
+ $("loginopen").textContent=login?"Abmelden":"Anmelden zum Eintragen";
+ $("neu").style.display=darf?"":"none";
+}
+function pruefen(t){
+ token=t;
+ return gh("GET","/user").then(function(u){login=u.login;return gh("GET","/repos/"+CFG.owner+"/"+CFG.repo)}).then(function(r){darf=!!(r.permissions&&r.permissions.push);status();if(!darf)throw new Error("Dieses Konto hat keine Schreibrechte auf das Repository.")});
+}
+function abmelden(){token="";login="";darf=false;ls("fg-token",null);status();laden()}
+$("loginopen").onclick=function(){if(login)return abmelden();$("login").style.display="block";$("app").style.display="none"};
+$("logincancel").onclick=function(){$("login").style.display="none";$("app").style.display="grid"};
+$("loginbtn").onclick=function(){
+ var t=$("tok").value.trim();if(!t)return;
+ $("loginerr").textContent="";
+ pruefen(t).then(function(){ls("fg-token",t);$("tok").value="";toast("👋 Angemeldet als @"+login);$("login").style.display="none";$("app").style.display="grid";laden()}).catch(function(e){
+  if(!darf&&login){ls("fg-token",t);$("login").style.display="none";$("app").style.display="grid";laden()}
+  $("loginerr").textContent=(e.status===401?"Token ungültig oder abgelaufen":e.message)});
+};
+$("refresh").onclick=laden;
+
+/* ---------- Effekte ---------- */
+var ICO={"Achterbahn":"🎢","Kettenkarussell":"🎠","Riesenrad":"🎡","Autoscooter":"🚗","Freifallturm":"🗼","Wasserbahn":"🌊","Kinderfahrgeschäft":"🧸","Rundfahrgeschäft":"🌀","Laufgeschäft":"🏃","Sonstiges":"✨"};
+function ico(t){return ICO[t]||"🎪"}
+function toast(t){var e=$("toast");e.textContent=t;e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(function(){e.classList.remove("on")},2600)}
+function stats(){
+ var w=daten.filter(function(d){return d.wichtig}).length,t={};daten.forEach(function(d){t[d.typ]=1});
+ var v=[[daten.length,"Akten","📁"],[w,"mit wichtigen Infos","⚠️"],[Object.keys(t).length,"Typen","🎢"]];
+ $("stats").innerHTML=v.map(function(x,i){return '<div class="stat" style="--i:'+i+'"><span>'+x[2]+'</span><b data-n="'+x[0]+'">0</b><small>'+x[1]+'</small></div>'}).join("");
+ document.querySelectorAll(".stat b").forEach(function(el){var n=+el.dataset.n,s=null;function f(ts){s=s||ts;var p=Math.min((ts-s)/800,1);el.textContent=Math.round(n*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(f)}requestAnimationFrame(f)});
+}
+document.addEventListener("pointerdown",function(e){var b=e.target.closest(".btn");if(!b)return;var r=b.getBoundingClientRect();b.style.setProperty("--x",(e.clientX-r.left)+"px");b.style.setProperty("--y",(e.clientY-r.top)+"px");b.classList.remove("rp");void b.offsetWidth;b.classList.add("rp")});
+
+/* ---------- Anzeige ---------- */
+$("ft").innerHTML='<option value="">Alle Typen</option>'+TYPEN.map(function(t){return '<option>'+t+'</option>'}).join("");
+function zeichne(){
+ var q=$("q").value.toLowerCase(),ft=$("ft").value;
+ var r=daten.filter(function(d){return (!ft||d.typ===ft)&&(!q||[d.name,d.typ,d.schausteller,d.hersteller,d.wichtig,d.infos,d.weitere,d.notizen,d.von].join(" ").toLowerCase().indexOf(q)>-1)});
+ r.sort(function(a,b){return (b.geaendert||"").localeCompare(a.geaendert||"")});
+ $("liste").innerHTML=r.length?r.map(function(d,i){return '<div class="item'+(d.id===sel?' on':'')+'" data-id="'+d.id+'" style="--i:'+i+'"><span class="ic">'+ico(d.typ)+'</span><div><span class="nr">'+nr(d.id)+(d.wichtig?' <em class="warn">⚠ wichtig</em>':'')+'</span><b>'+esc(d.name)+'</b><small>'+esc(d.typ||"–")+' · '+esc(d.schausteller||"–")+'</small></div></div>'}).join(""):'<div class="empty">Keine Akten gefunden.</div>';
+ $("app").classList.toggle("detail",sel!==null);
+ akte();
+}
+function akte(){
+ var a=$("akte");a.classList.remove("in");void a.offsetWidth;a.classList.add("in");
+ if(sel==="neu"&&darf)return form(null);
+ var d=daten.filter(function(x){return x.id===sel})[0];
+ if(!d){a.innerHTML='<div class="empty">Wähle links eine Akte aus'+(darf?' oder lege mit „+ Neu“ eine neue an':'')+'.</div>';return}
+ var maße=[d.laenge&&"L "+d.laenge+" m",d.breite&&"B "+d.breite+" m",d.hoehe&&"H "+d.hoehe+" m",d.gewicht&&d.gewicht+" t"].filter(Boolean).join(" · ");
+ function z(k,v){return v?'<dt>'+k+'</dt><dd>'+esc(v)+'</dd>':""}
+ a.innerHTML='<button class="btn sec back" id="zurueck">← Liste</button>'+
+ '<div class="kopf"><div><span class="nr">'+nr(d.id)+'</span><h2><span class="ic">'+ico(d.typ)+'</span>'+esc(d.name)+'</h2></div>'+(darf?'<div class="row"><button class="btn sec" id="edit">Bearbeiten</button><button class="btn del" id="loesch">Löschen</button></div>':'')+'</div>'+
+ (d.wichtig?'<div class="wichtig"><b>⚠ Wichtige Infos</b>'+esc(d.wichtig)+'</div>':"")+
+ '<dl>'+z("Typ",d.typ)+z("Schausteller",d.schausteller)+z("Hersteller",d.hersteller)+z("Baumaße",maße)+z("Umdrehungen",d.umdrehungen)+z("Eingetragen von",d.von)+'</dl>'+
+ (d.infos?'<h3>Infos</h3><div style="white-space:pre-wrap">'+esc(d.infos)+'</div>':"")+
+ (d.weitere?'<h3>Weitere Infos</h3><div style="white-space:pre-wrap">'+esc(d.weitere)+'</div>':"")+
+ (d.notizen?'<h3>Notizen</h3><div style="white-space:pre-wrap">'+esc(d.notizen)+'</div>':"")+
+ '<h3>Verlauf</h3><div class="verlauf">'+(d.verlauf||[]).slice().reverse().map(function(v){return '<div>'+datum(v.wann)+' · <b>'+esc(v.wer)+'</b> · '+esc(v.was)+'</div>'}).join("")+'</div>';
+ $("zurueck").onclick=function(){sel=null;zeichne()};
+ if(darf){
+  $("edit").onclick=function(){form(d)};
+  $("loesch").onclick=function(){
+   if(!confirm("Akte "+nr(d.id)+" wirklich löschen?"))return;
+   speichern(function(l){var i=l.findIndex(function(x){return x.id===d.id});if(i>-1)l.splice(i,1)},"Akte gelöscht: "+d.name+" (von "+login+")").then(function(){sel=null;toast("🗑️ Akte gelöscht");laden()}).catch(function(e){alert("Fehler: "+e.message)});
+  };
+ }
+}
+var FELD=[["name","Bezeichnung / Name *"],["schausteller","Schausteller"],["hersteller","Hersteller"],["laenge","Länge (m)"],["breite","Breite (m)"],["hoehe","Höhe (m)"],["gewicht","Gewicht (t)"],["umdrehungen","Umdrehungen"]];
+var ALLE=["name","typ","schausteller","hersteller","laenge","breite","hoehe","gewicht","umdrehungen","wichtig","infos","weitere","notizen"];
+function form(d){
+ d=d||{};
+ var h='<button class="btn sec back" id="zurueck">← Liste</button><h2>'+(d.id?"Akte bearbeiten – "+nr(d.id):"Neue Akte anlegen")+'</h2><div class="wichtig" style="background:none;border-color:var(--bd);color:var(--tx)"><b>⚠ Wichtige Infos</b><textarea id="f_wichtig" rows="3" placeholder="Wird in der Akte hervorgehoben (z. B. Sicherheitshinweise, Prüftermine)">'+esc(d.wichtig)+'</textarea></div><div class="grid">';
+ h+='<div><label class="l">Fahrgeschäft-Typ</label><select id="f_typ">'+TYPEN.map(function(t){return '<option'+(t===d.typ?' selected':'')+'>'+t+'</option>'}).join("")+'</select></div>';
+ FELD.forEach(function(f){h+='<div><label class="l">'+f[1]+'</label><input id="f_'+f[0]+'" value="'+esc(d[f[0]])+'"></div>'});
+ h+='</div>';
+ [["infos","Infos"],["weitere","Weitere Infos"],["notizen","Notizen"]].forEach(function(f){h+='<h3>'+f[1]+'</h3><textarea id="f_'+f[0]+'" rows="3">'+esc(d[f[0]])+'</textarea>'});
+ h+='<div class="err" id="ferr"></div><div class="row" style="margin-top:14px"><button class="btn" id="speich">Speichern</button><button class="btn sec" id="abbr">Abbrechen</button></div>';
+ $("akte").innerHTML=h;
+ $("zurueck").onclick=$("abbr").onclick=function(){sel=d.id||null;zeichne()};
+ $("speich").onclick=function(){
+  var b={};ALLE.forEach(function(k){b[k]=$("f_"+k).value.trim()});
+  if(!b.name){$("ferr").textContent="Bitte eine Bezeichnung eintragen.";return}
+  $("speich").disabled=true;$("ferr").textContent="Speichere …";
+  var jetzt=new Date().toISOString(),p;
+  if(d.id){
+   p=speichern(function(l){
+    var e=l.filter(function(x){return x.id===d.id})[0];
+    if(!e)throw new Error("Die Akte wurde inzwischen gelöscht.");
+    var ge=ALLE.filter(function(k){return b[k]!==(e[k]||"")});
+    if(!ge.length)return e;
+    Object.assign(e,b,{geaendert:jetzt});
+    (e.verlauf=e.verlauf||[]).push({wann:jetzt,wer:login,was:"Geändert: "+ge.join(", ")});
+    return e;
+   },"Akte geändert: "+b.name+" (von "+login+")");
+  }else{
+   p=speichern(function(l){
+    var e=Object.assign({id:l.reduce(function(m,x){return Math.max(m,x.id)},0)+1},b,{von:login,erstellt:jetzt,geaendert:jetzt,verlauf:[{wann:jetzt,wer:login,was:"Eintrag angelegt"}]});
+    l.push(e);return e;
+   },"Neue Akte: "+b.name+" (von "+login+")");
+  }
+  p.then(function(e){sel=e.id;toast("✅ Gespeichert");laden()}).catch(function(e){$("speich").disabled=false;$("ferr").textContent=e.status===401||e.status===403?"Keine Berechtigung zum Speichern (Token oder Rechte prüfen).":"Fehler: "+e.message});
+ };
+}
+$("liste").onclick=function(e){var i=e.target.closest(".item");if(i){sel=Number(i.dataset.id);zeichne()}};
+$("neu").onclick=function(){sel="neu";zeichne()};
+$("q").oninput=$("ft").oninput=zeichne;
+
+if(!CFG.owner){$("liste").innerHTML='<div class="err">Besitzer/Repository unbekannt. Bitte in config.js eintragen.</div>'}
+else{
+ var t=ls("fg-token");
+ if(t)pruefen(t).catch(function(){}).then(laden);else laden();
+ setInterval(function(){if(token&&!document.getElementById("f_name"))laden()},60000);
+}
+status();
+</script>
+</body>
+</html>
